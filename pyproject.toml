@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "local-graphrag-mcp"
 version = "0.1.0"
-description = "A local GraphRAG MCP server using DuckDB for hybrid vector-graph retrieval"
+description = "A local GraphRAG MCP server using FAISS and NetworkX for hybrid vector-graph retrieval"
 authors = [{name = "Fabio Nonato", email = "nonatofabio@gmail.com"}]
-readme = "TENTATIVE_README.md"  # TODO: Update to README.md when created
+readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-keywords = ["mcp", "graphrag", "duckdb", "rag", "knowledge-graph", "vector-search"]
+keywords = ["mcp", "graphrag", "faiss", "networkx", "rag", "knowledge-graph", "vector-search"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
