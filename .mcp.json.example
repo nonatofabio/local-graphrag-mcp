@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "local-graphrag": {
+      "command": "local-graphrag-mcp",
+      "args": [
+        "--index-dir", "/path/to/graphrag_data",
+        "--embed", "all-MiniLM-L6-v2"
+      ]
+    }
+  }
+}

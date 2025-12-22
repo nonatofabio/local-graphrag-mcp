@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-graphrag-mcp"
+version = "0.1.0"
+description = "A local GraphRAG MCP server using DuckDB for hybrid vector-graph retrieval"
+authors = [{name = "Fabio Nonato", email = "nonatofabio@gmail.com"}]
+readme = "TENTATIVE_README.md"  # TODO: Update to README.md when created
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["mcp", "graphrag", "duckdb", "rag", "knowledge-graph", "vector-search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "mcp>=0.9.0",                    # Official MCP SDK
+    "faiss-cpu>=1.8.0",              # Vector similarity search
+    "networkx>=3.0",                 # Graph operations
+    "sentence-transformers>=2.2.0",  # Embeddings
+    "numpy>=1.24.0",                 # Numerical operations
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",        # For async MCP tests
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+local-graphrag-mcp = "local_graphrag_mcp.server:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
