@@ -8,13 +8,13 @@ Unlike standard vector stores, this project implements **Graph RAG**: it uses ve
 
 ## Why Graph RAG?
 
-**Standard RAG** (like FAISS alone) retrieves chunks based on keyword similarity.
+**Standard RAG** (like FAISS alone) retrieves chunks based on semantic similarity to the query.
 
-**Graph RAG** retrieves chunks based on relationships.
+**Graph RAG** retrieves chunks based on semantic similarity AND relationship traversal.
 
 **Example:**
-- **Standard RAG**: User asks "Who is the manager of the Auth Service?" → Returns chunks mentioning "Auth Service"
-- **Graph RAG**: Finds "Auth Service" node → Traverses `[MANAGED_BY]` edge → Returns "Alice", even if the text about Alice doesn't mention "Auth Service"
+- **Standard RAG**: User asks "Who manages the Auth Service?" → Finds chunks semantically similar to the query → May miss "Alice" if her description doesn't semantically match "manages auth service"
+- **Graph RAG**: Finds "Auth Service" node via semantic search → Traverses `[MANAGED_BY]` edge → Returns "Alice" and her full context, even if her description doesn't directly relate to the query
 
 ## Features
 
