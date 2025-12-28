@@ -484,7 +484,7 @@ Examples:
   local-graphrag index -r documents/
 
   # Index with specific Ollama model
-  local-graphrag index --extract-model llama3.1:8b document.pdf
+  local-graphrag index --extract-model gemma2:9b document.pdf
 
   # Index using Claude API (cloud, requires ANTHROPIC_API_KEY)
   export ANTHROPIC_API_KEY='your-key-here'
@@ -526,7 +526,7 @@ Examples:
     index_parser.add_argument(
         '--extract-model',
         type=str,
-        help='Model for entity extraction (default: llama3.2:3b for local, claude-3-5-sonnet for cloud)'
+        help='Model for entity extraction (default: gemma2:2b for local, claude-3-5-sonnet for cloud)'
     )
 
     # Search command

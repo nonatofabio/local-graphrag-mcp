@@ -1,7 +1,13 @@
+README.md
 TENTATIVE_README.md
 pyproject.toml
 local_graphrag_mcp/__init__.py
 local_graphrag_mcp/__main__.py
+local_graphrag_mcp/cli.py
+local_graphrag_mcp/colors.py
+local_graphrag_mcp/document_parser.py
+local_graphrag_mcp/entity_extractor.py
+local_graphrag_mcp/progress.py
 local_graphrag_mcp/server.py
 local_graphrag_mcp.egg-info/PKG-INFO
 local_graphrag_mcp.egg-info/SOURCES.txt
@@ -9,5 +15,5 @@ local_graphrag_mcp.egg-info/dependency_links.txt
 local_graphrag_mcp.egg-info/entry_points.txt
 local_graphrag_mcp.egg-info/requires.txt
 local_graphrag_mcp.egg-info/top_level.txt
-tests/test_extensions.py
+tests/test_document_parser.py
 tests/test_standalone.py

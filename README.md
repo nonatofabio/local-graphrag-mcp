@@ -61,8 +61,8 @@ brew install ollama
 # Start Ollama service
 ollama serve
 
-# Pull the default model (Llama 3.2 3B)
-ollama pull llama3.2:3b
+# Pull the default model (Gemma 2 2B)
+ollama pull gemma2:2b
 ```
 
 **Optional: Cloud Extraction with Claude API**
@@ -88,7 +88,7 @@ local-graphrag index document.pdf
 local-graphrag index -r documents/
 
 # Index with specific Ollama model
-local-graphrag index --extract-model llama3.1:8b document.pdf
+local-graphrag index --extract-model gemma2:9b document.pdf
 
 # Index using Claude API (requires anthropic package and API key)
 local-graphrag index --use-cloud document.pdf

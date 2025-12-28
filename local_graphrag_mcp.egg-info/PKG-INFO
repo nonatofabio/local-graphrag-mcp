@@ -1,10 +1,10 @@
 Metadata-Version: 2.4
 Name: local-graphrag-mcp
 Version: 0.1.0
-Summary: A local GraphRAG MCP server using DuckDB for hybrid vector-graph retrieval
+Summary: A local GraphRAG MCP server using FAISS and NetworkX for hybrid vector-graph retrieval
 Author-email: Fabio Nonato <nonatofabio@gmail.com>
 License: MIT
-Keywords: mcp,graphrag,duckdb,rag,knowledge-graph,vector-search
+Keywords: mcp,graphrag,faiss,networkx,rag,knowledge-graph,vector-search
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
 Classifier: License :: OSI Approved :: MIT License
@@ -19,206 +19,293 @@ Requires-Dist: faiss-cpu>=1.8.0
 Requires-Dist: networkx>=3.0
 Requires-Dist: sentence-transformers>=2.2.0
 Requires-Dist: numpy>=1.24.0
+Requires-Dist: anthropic>=0.40.0
+Requires-Dist: pypdf>=3.0.0
+Requires-Dist: colorama>=0.4.6
+Requires-Dist: tqdm>=4.65.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
 Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: ruff>=0.1.0; extra == "dev"
 
-[This is a tentative README, unformatted, to help drive the development of this project.]
-
-Local GraphRAG MCP Server
+# Local GraphRAG MCP Server
 
 <!-- mcp-name: io.github.nonatofabio/local-graphrag-mcp -->
 
 A Model Context Protocol (MCP) server that provides a local, embedded Knowledge Graph for Retrieval-Augmented Generation (RAG).
 
-Unlike standard vector stores, this project implements Graph RAG: it uses vector search to find relevant entities ("anchors") and then traverses relationships to retrieve connected context. It runs entirely in a single process using DuckDB + DuckPGQ + VSS.
+Unlike standard vector stores, this project implements **Graph RAG**: it uses vector search to find relevant entities ("anchors") and then traverses relationships to retrieve connected context. It runs entirely in a single Python process using FAISS for vector search and NetworkX for graph operations.
 
-Why Graph RAG?
+## Why Graph RAG?
 
-Standard RAG (like FAISS) retrieves chunks based on keyword similarity.
-Graph RAG retrieves chunks based on relationships.
+**Standard RAG** (like FAISS alone) retrieves chunks based on semantic similarity to the query.
 
-Standard RAG: User asks "Who is the manager of the Auth Service?" -> Returns chunks mentioning "Auth Service".
+**Graph RAG** retrieves chunks based on semantic similarity AND relationship traversal.
 
-Graph RAG: Finds "Auth Service" node -> Traverses [MANAGED_BY] edge -> Returns "Alice", even if the text about Alice doesn't mention "Auth Service".
+**Example:**
+- **Standard RAG**: User asks "Who manages the Auth Service?" → Finds chunks semantically similar to the query → May miss "Alice" if her description doesn't semantically match "manages auth service"
+- **Graph RAG**: Finds "Auth Service" node via semantic search → Traverses `[MANAGED_BY]` edge → Returns "Alice" and her full context, even if her description doesn't directly relate to the query
 
-Features
+## Features
 
-Core Capabilities
+### Core Capabilities
 
-Single-File Database: Entire graph and vector index stored in one portable .duckdb file.
+- **Pure Python**: FAISS (vector search) + NetworkX (graph traversal) - no external services required
+- **Single Process**: Runs entirely in-process, no Docker containers or background services
+- **Hybrid Retrieval**: Combines vector similarity search (anchor discovery) with graph traversal (context expansion)
+- **Persistent Storage**: Three-file storage system (FAISS index, NetworkX graph, metadata JSON)
+- **MCP Compatible**: Plug-and-play with Claude Desktop, Cursor, or any MCP client
+- **Configurable Traversal**: Control anchor count (top-k) and expansion depth (hops)
 
-Hybrid Retrieval: Combines HNSW Vector Search (entry) + Property Graph Traversal (expansion).
+## Installation
 
-Zero-Copy Architecture: No syncing between a Graph DB and a Vector DB; they are the same table rows.
+### Prerequisites
 
-Standardized Querying: Uses SQL/PGQ (SQL:2023 standard) for graph patterns.
+- Python 3.10+
+- pip
 
-MCP Compatible: Plug-and-play with Claude Desktop, Cursor, or any MCP client.
+### From Source
 
-Quickstart
-
-# Install
-pip install local-graphrag-mcp
-
-# Initialize a new graph database
-local-graphrag init ./knowledge_graph.duckdb
-
-# Ingest a document (auto-extracts entities using your local LLM or API)
-local-graphrag ingest ./docs/architecture.md --extract-model claude-3-5-sonnet
-
-# Query interactively
-local-graphrag query "How does the ingestion pipeline work?"
-
-
-Installation
-
-Prerequisites
-
-Python 3.10+
-
-A working C++ compiler (sometimes needed for DuckDB extensions on specific Linux distros, though wheels usually suffice).
-
-From PyPI
-
-pip install local-graphrag-mcp
-
-
-From Source
-
-git clone [https://github.com/nonatofabio/local_graphrag_mcp.git](https://github.com/nonatofabio/local_graphrag_mcp.git)
+```bash
+git clone https://github.com/nonatofabio/local_graphrag_mcp.git
 cd local_graphrag_mcp
 pip install -e .
+```
 
+### Development Installation
 
-Usage
+```bash
+pip install -e ".[dev]"
+```
 
-1. Running the MCP Server
+## Usage
 
-Add to your claude_desktop_config.json:
+### 1. Running the MCP Server
 
+Add to your `claude_desktop_config.json`:
+
+```json
 {
   "mcpServers": {
     "local-graphrag": {
       "command": "local-graphrag-mcp",
       "args": [
-        "--db-path", "/absolute/path/to/my_graph.duckdb",
-        "--embedding-model", "all-MiniLM-L6-v2"
+        "--index-dir", "/absolute/path/to/graphrag_data",
+        "--embed", "all-MiniLM-L6-v2"
       ]
     }
   }
 }
+```
 
+**Arguments:**
+- `--index-dir`: Directory where graph data will be stored (default: `./graphrag_index`)
+- `--embed`: Sentence transformer model name (default: `all-MiniLM-L6-v2`)
+- `--debug`: Enable debug logging (optional)
 
-2. Available Tools
+### 2. Available Tools
 
-The server exposes the following tools to the LLM:
+The server exposes two tools to the LLM:
 
-add_knowledge_graph
+#### `add_knowledge_graph`
 
-Directly adds nodes and edges to the graph. Useful when the LLM has already "read" a file and wants to memorize structured info.
+Directly adds nodes and edges to the knowledge graph. Use this when the LLM has extracted structured information from documents.
 
-Input Schema:
-
+**Input Schema:**
+```json
 {
   "nodes": [
-    {"id": "entity:auth_service", "label": "Service", "description": "The authentication microservice", "properties": {"language": "Python"}}
+    {
+      "id": "entity:auth_service",
+      "label": "Service",
+      "description": "The authentication microservice handling user login",
+      "properties": {"language": "Python", "version": "2.1.0"}
+    }
   ],
   "edges": [
-    {"source": "entity:auth_service", "target": "entity:postgres_db", "label": "CONNECTS_TO", "properties": {"port": 5432}}
+    {
+      "source": "entity:auth_service",
+      "target": "entity:postgres_db",
+      "label": "CONNECTS_TO",
+      "properties": {"protocol": "TCP"}
+    }
   ]
 }
+```
 
+**Returns:**
+```json
+{
+  "success": true,
+  "nodes_added": 1,
+  "edges_added": 1
+}
+```
 
-query_graph_rag
+#### `query_graph_rag`
 
-The magic tool. It performs the "Anchor & Expand" search strategy.
+The primary retrieval tool implementing the "Anchor & Expand" strategy.
 
-Input Schema:
-
+**Input Schema:**
+```json
 {
   "query": "What database does the auth service use?",
   "top_k_anchors": 3,
   "hops": 2
 }
+```
 
+**Parameters:**
+- `query`: Natural language query
+- `top_k_anchors`: Number of most similar nodes to find (default: 3)
+- `hops`: How many relationship hops to traverse from anchors (default: 2)
 
-How it works internaly:
+**Returns:**
+```json
+{
+  "success": true,
+  "query": "What database does the auth service use?",
+  "anchors": [
+    {
+      "id": "entity:auth_service",
+      "label": "Service",
+      "description": "The authentication microservice...",
+      "similarity_score": 0.85
+    }
+  ],
+  "subgraph": {
+    "nodes": [...],
+    "edges": [...]
+  }
+}
+```
 
-Embed: Embeds input query: [0.12, 0.88, ...]
+### How It Works Internally
 
-Vector Search: Finds top 3 nodes in NODES table similar to the query.
+**Anchor & Expand Strategy:**
 
-Graph Expansion: Runs a DuckPGQ query:
+1. **Embed**: Converts your query into a 384-dimensional vector using sentence-transformers
+2. **Vector Search**: Uses FAISS to find the top-k most similar nodes (anchors) via L2 distance
+3. **Graph Expansion**: Performs BFS traversal from anchor nodes up to N hops
+   - Traverses both outgoing edges (successors)
+   - Collects all connected nodes and relationships
+4. **Context Assembly**: Returns structured subgraph to the LLM with anchor nodes and expanded neighborhood
 
-FROM GRAPH_TABLE (
-    mcp_graph
-    MATCH (start)-[e]->(end)
-    WHERE start.id IN ('found_id_1', 'found_id_2')
-    COLUMNS (start.properties, e.label, end.properties)
-)
+**Example:**
+```
+Query: "What database does the auth service use?"
 
+Step 1 (Anchor): Find "entity:auth_service" (similarity: 0.85)
+Step 2 (Expand 1-hop): Traverse [CONNECTS_TO] → "entity:postgres_db"
+Step 3 (Expand 2-hops): Traverse from postgres_db → "entity:backup_service"
 
-Context: Returns a structured subgraph to the LLM.
+Result: Subgraph with 3 nodes and 2 edges
+```
 
-Configuration
+## Architecture
 
-Environment Variables
+### Stack Overview
 
-You can configure the server via environment variables or CLI flags:
+```
+[ LLM Client ] <--> [ MCP Server ] <--> [ GraphRAGVectorStore ]
+                                              |
+                              +---------------+---------------+
+                              |                               |
+                         [ FAISS Index ]              [ NetworkX Graph ]
+                       (vector similarity)          (relationship traversal)
+                              |                               |
+                              +----------- Shared IDs --------+
+```
 
-GRAPHRAG_DB_PATH: Path to the .duckdb file (Default: ./graph.duckdb)
+### Data Model
 
-GRAPHRAG_EMBED_MODEL: Sentence transformer model (Default: all-MiniLM-L6-v2)
+**Nodes:**
+- `id`: Unique entity identifier (e.g., "entity:auth_service")
+- `label`: Entity type (e.g., "Service", "Database", "Person")
+- `description`: Natural language description (embedded as 384D vector)
+- `properties`: Schema-less JSON attributes
 
-GRAPHRAG_DEBUG: Set to true to see generated SQL/PGQ queries in logs.
+**Edges:**
+- `source`: Source node ID
+- `target`: Target node ID
+- `label`: Relationship type (e.g., "CONNECTS_TO", "MANAGED_BY")
+- `properties`: Schema-less JSON metadata
 
-Custom Extraction Prompt
+### Storage
 
-If using the CLI ingest command, you can provide a custom prompt for the extraction phase:
+Three files are created in the index directory:
 
-local-graphrag ingest ./paper.pdf --prompt-file ./custom_extraction.txt
+1. **`nodes.index`**: FAISS IndexFlatL2 (vector embeddings)
+2. **`graph.gpickle`**: NetworkX directed graph (nodes, edges, properties)
+3. **`metadata.json`**: Node descriptions and embedding model info
 
+## Development
 
-Development
+### Running Tests
 
-Architecture Overview
-
-[ LLM Client ] <--> [ MCP Server (FastMCP) ] <--> [ DuckDB Process ]
-                                                         |
-                                         +---------------+---------------+
-                                         |                               |
-                                     [ NODES Table ]               [ EDGES Table ]
-                                     (id, vector, json)           (src, tgt, label)
-                                         |                               |
-                                         +------- [ Property Graph ] ----+
-                                                  (View via DuckPGQ)
-
-
-Running Tests
-
+```bash
 # Install dev dependencies
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 
-# Run unit tests
+# Run all tests
 pytest tests/
 
-# Run specific DuckDB extension tests
-pytest tests/test_extensions.py
+# Run with verbose output
+pytest tests/ -v
 
+# Run standalone integration test
+python tests/test_standalone.py
+```
 
-Roadmap
+### Project Structure
 
-[ ] v0.1.0: Basic DuckDB + DuckPGQ + VSS integration.
+```
+local-graphrag-mcp/
+├── local_graphrag_mcp/
+│   ├── __init__.py          # Package exports
+│   ├── __main__.py          # CLI entry point
+│   └── server.py            # Core implementation (585 lines)
+├── tests/
+│   ├── __init__.py
+│   └── test_standalone.py   # End-to-end integration test
+├── pyproject.toml           # Package configuration
+├── .mcp.json.example        # Example MCP config
+├── CLAUDE.md                # Development guidance
+└── README.md                # This file
+```
 
-[ ] v0.2.0: "Smart Ingest" CLI that uses local LLMs (Ollama) to extract entities.
+### Key Design Decisions
 
-[ ] v0.3.0: Visualization server (interactive graph explorer).
+**Why FAISS + NetworkX instead of a graph database?**
+1. **Simplicity**: Pure Python, no external services (Redis, Neo4j, etc.)
+2. **Performance**: FAISS for fast vector search, NetworkX for in-memory graph traversal
+3. **Portability**: Entire graph fits in three files, easy to version control or share
 
-[ ] v0.4.0: Multi-hop reasoning prompts.
+**Why not DuckDB/DuckPGQ?**
+- Initial implementation attempted SQL/PGQ property graphs
+- Compatibility issues with DuckPGQ extension across DuckDB versions
+- Complex SQL syntax for graph patterns vs. simple Python NetworkX API
+- Decision: Prioritize simplicity and reliability
 
-License
+## Roadmap
 
-MIT
+- [x] v0.1.0: Core FAISS + NetworkX implementation
+- [x] v0.1.0: MCP server with add/query tools
+- [x] v0.1.0: Persistent storage and reload
+- [ ] v0.2.0: CLI commands for initialization and ingestion
+- [ ] v0.3.0: Smart document ingestion (auto-extract entities via LLM)
+- [ ] v0.4.0: Graph visualization tools
+- [ ] v0.5.0: Multi-hop reasoning enhancements
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Acknowledgments
+
+This project follows patterns established by [local_faiss_mcp](https://github.com/yourusername/local_faiss_mcp) for MCP integration and coding style.
