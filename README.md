@@ -48,7 +48,57 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
+### Ollama Setup (for Local Entity Extraction)
+
+The CLI uses **Ollama** by default for local entity extraction. Install and set up Ollama:
+
+```bash
+# Install Ollama (macOS)
+brew install ollama
+
+# Or download from: https://ollama.ai
+
+# Start Ollama service
+ollama serve
+
+# Pull the default model (Llama 3.2 3B)
+ollama pull llama3.2:3b
+```
+
+**Optional: Cloud Extraction with Claude API**
+
+For higher precision entity extraction, install the optional cloud dependencies:
+
+```bash
+pip install -e ".[cloud]"
+export ANTHROPIC_API_KEY='your-key-here'
+```
+
 ## Usage
+
+### CLI Commands
+
+The CLI provides document indexing with automatic entity extraction:
+
+```bash
+# Index documents using local Ollama (default)
+local-graphrag index document.pdf
+
+# Index multiple documents recursively
+local-graphrag index -r documents/
+
+# Index with specific Ollama model
+local-graphrag index --extract-model llama3.1:8b document.pdf
+
+# Index using Claude API (requires anthropic package and API key)
+local-graphrag index --use-cloud document.pdf
+
+# Query the knowledge graph
+local-graphrag search "What database does the auth service use?"
+
+# List indexed entities
+local-graphrag list
+```
 
 ### 1. Running the MCP Server
 

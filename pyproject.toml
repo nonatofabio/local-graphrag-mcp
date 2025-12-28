@@ -27,9 +27,16 @@ dependencies = [
     "networkx>=3.0",                 # Graph operations
     "sentence-transformers>=2.2.0",  # Embeddings
     "numpy>=1.24.0",                 # Numerical operations
+    "ollama>=0.4.0",                 # Local LLM for entity extraction
+    "pypdf>=3.0.0",                  # PDF parsing
+    "colorama>=0.4.6",               # Colored CLI output
+    "tqdm>=4.65.0",                  # Progress bars
 ]
 
 [project.optional-dependencies]
+cloud = [
+    "anthropic>=0.40.0",             # Claude API for cloud entity extraction
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",        # For async MCP tests
@@ -39,6 +46,7 @@ dev = [
 
 [project.scripts]
 local-graphrag-mcp = "local_graphrag_mcp.server:main"
+local-graphrag = "local_graphrag_mcp.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
