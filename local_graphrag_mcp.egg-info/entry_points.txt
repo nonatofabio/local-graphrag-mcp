@@ -1,3 +1,0 @@
-[console_scripts]
-local-graphrag = local_graphrag_mcp.cli:main
-local-graphrag-mcp = local_graphrag_mcp.server:main
