@@ -61,8 +61,8 @@ brew install ollama
 # Start Ollama service
 ollama serve
 
-# Pull the default model (Gemma 2 2B)
-ollama pull gemma2:2b
+# Pull the default model (Gemma 3 1B)
+ollama pull gemma3:1b
 ```
 
 **Optional: Cloud Extraction with Claude API**

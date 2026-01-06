@@ -4,7 +4,7 @@ Entity extraction for GraphRAG knowledge graph construction.
 
 Extracts structured entities (nodes) and relationships (edges) from text
 using either:
-- Ollama (local, default) with Gemma 2 2B
+- Ollama (local, default) with Gemma 3 1B
 - Claude API (cloud, optional) for higher precision
 """
 
@@ -100,7 +100,7 @@ def _parse_json_response(response_text: str) -> dict[str, Any]:
 
 def extract_entities_with_ollama(
     text: str,
-    model: str = "gemma2:2b",
+    model: str = "gemma3:1b",
     ollama_host: Optional[str] = None
 ) -> dict[str, Any]:
     """
@@ -108,7 +108,7 @@ def extract_entities_with_ollama(
 
     Args:
         text: Text to analyze
-        model: Ollama model to use (default: gemma2:2b)
+        model: Ollama model to use (default: gemma3:1b)
         ollama_host: Ollama host URL (defaults to OLLAMA_HOST env var or http://localhost:11434)
 
     Returns:
@@ -236,7 +236,7 @@ def extract_entities(
     Args:
         text: Text to analyze
         use_cloud: If True, use Claude API; if False, use Ollama (default: False)
-        model: Model name to use (defaults: gemma2:2b for Ollama, claude-3-5-sonnet for Claude)
+        model: Model name to use (defaults: gemma3:1b for Ollama, claude-3-5-sonnet for Claude)
         **kwargs: Additional arguments for the extraction function
 
     Returns:
@@ -254,7 +254,7 @@ def extract_entities(
             **kwargs
         )
     else:
-        default_model = "gemma2:2b"
+        default_model = "gemma3:1b"
         return extract_entities_with_ollama(
             text,
             model=model or default_model,

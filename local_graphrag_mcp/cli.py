@@ -526,7 +526,7 @@ Examples:
     index_parser.add_argument(
         '--extract-model',
         type=str,
-        help='Model for entity extraction (default: gemma2:2b for local, claude-3-5-sonnet for cloud)'
+        help='Model for entity extraction (default: gemma3:1b for local, claude-3-5-sonnet for cloud)'
     )
 
     # Search command
